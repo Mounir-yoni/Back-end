@@ -13,8 +13,17 @@ const envPath = isProduction
 
 // Load environment variables
 if (isProduction) {
-  // In production, use environment variables directly
-  console.log('✅ Running in production mode - using environment variables');
+  // In production, try to load from .env first, then fall back to process.env
+  if (fs.existsSync(envPath)) {
+    const result = dotenv.config({ path: envPath });
+    if (result.error) {
+      console.error('❌ Error loading .env file:', result.error);
+    } else {
+      console.log('✅ Environment variables loaded from .env file');
+    }
+  } else {
+    console.log('ℹ️ No .env file found, using process.env variables');
+  }
 } else {
   // In development, load from config file
   if (!fs.existsSync(envPath)) {
@@ -36,13 +45,32 @@ const requiredEnvVars = ['DB_URI', 'JWT_SECRET', 'PORT'];
 const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 
 if (missingEnvVars.length > 0) {
-  console.error('❌ Missing required environment variables:', missingEnvVars.join(', '));
-  console.error('Current environment variables:', {
+  console.error('\n❌ Missing required environment variables:', missingEnvVars.join(', '));
+  console.error('\nCurrent environment variables:', {
     NODE_ENV: process.env.NODE_ENV || 'not set',
     DB_URI: process.env.DB_URI ? 'Set' : 'Not Set',
     JWT_SECRET: process.env.JWT_SECRET ? 'Set' : 'Not Set',
     PORT: process.env.PORT ? 'Set' : 'Not Set'
   });
+
+  if (isProduction) {
+    console.error('\n⚠️ Production Environment Setup Required:');
+    console.error('1. Set the following environment variables in your hosting platform:');
+    console.error('   - DB_URI: Your MongoDB connection string');
+    console.error('   - JWT_SECRET: A secure random string for JWT signing');
+    console.error('   - PORT: The port your application should run on (usually 8000)');
+    console.error('\n2. Example values:');
+    console.error('   DB_URI=mongodb+srv://username:password@cluster.mongodb.net/database');
+    console.error('   JWT_SECRET=your-secure-random-string-at-least-32-chars');
+    console.error('   PORT=8000');
+  } else {
+    console.error('\n⚠️ Development Environment Setup Required:');
+    console.error('1. Create a config.env file in the project root with the following variables:');
+    console.error('   DB_URI=your_mongodb_connection_string');
+    console.error('   JWT_SECRET=your_jwt_secret');
+    console.error('   PORT=8000');
+  }
+  
   process.exit(1);
 }
 
