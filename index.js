@@ -1,9 +1,26 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const path = require("path");
+const fs = require("fs");
+
+// Get the absolute path to config.env
+const envPath = path.join(__dirname, 'config.env');
+
+// Check if config.env exists
+if (!fs.existsSync(envPath)) {
+  console.error('❌ config.env file not found at:', envPath);
+  process.exit(1);
+}
 
 // Load env vars - must be first!
-dotenv.config({ path: path.join(__dirname, 'config.env') });
+const result = dotenv.config({ path: envPath });
+
+if (result.error) {
+  console.error('❌ Error loading config.env:', result.error);
+  process.exit(1);
+}
+
+console.log('✅ Environment variables loaded from:', envPath);
 
 // Verify environment variables
 const requiredEnvVars = ['DB_URI', 'JWT_SECRET', 'PORT'];
@@ -11,6 +28,11 @@ const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 
 if (missingEnvVars.length > 0) {
   console.error('❌ Missing required environment variables:', missingEnvVars.join(', '));
+  console.error('Current environment variables:', {
+    DB_URI: process.env.DB_URI ? 'Set' : 'Not Set',
+    JWT_SECRET: process.env.JWT_SECRET ? 'Set' : 'Not Set',
+    PORT: process.env.PORT ? 'Set' : 'Not Set'
+  });
   process.exit(1);
 }
 
@@ -29,7 +51,6 @@ const xss = require("xss-clean");
 const hpp = require("hpp");
 const cors = require("cors");
 const StatisticRoute = require("./Routes/StatisticRoute");
-const fs = require("fs");
 
 // Connect to database
 connectDatabase();
