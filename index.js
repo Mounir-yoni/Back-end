@@ -1,12 +1,25 @@
 const express = require("express");
-const app = express();
 const dotenv = require("dotenv");
+const path = require("path");
+
+// Load env vars - must be first!
+dotenv.config({ path: path.join(__dirname, 'config.env') });
+
+// Verify environment variables
+const requiredEnvVars = ['DB_URI', 'JWT_SECRET', 'PORT'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+  console.error('❌ Missing required environment variables:', missingEnvVars.join(', '));
+  process.exit(1);
+}
+
+const app = express();
 const connectDatabase = require("./config/database");
 const VoyageRoute = require("./Routes/VoyageRoute");
 const UserRoute = require("./Routes/UserRoute");
 const AuthRoute = require("./Routes/AuthRoute");
 const ReservationRoute = require("./Routes/ReservationRoute");
-const path = require("path");
 const ApiError = require("./utils/apierror");
 const globalError = require("./middlewares/errormiddelware");
 const rateLimit = require("express-rate-limit");
@@ -17,9 +30,6 @@ const hpp = require("hpp");
 const cors = require("cors");
 const StatisticRoute = require("./Routes/StatisticRoute");
 const fs = require("fs");
-
-// Load env vars
-dotenv.config({ path: "./config.env" });
 
 // Connect to database
 connectDatabase();
