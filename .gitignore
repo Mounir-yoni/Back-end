@@ -116,6 +116,4 @@ public
 .yarn/unplugged
 .yarn/build-state.yml
 .yarn/install-state.gz
-.pnp.*
-
-DB_URI=mongodb+srv://starkmounir:0iLHMepvVXJyDAyU@agencvoyage.xllfefc.mongodb.net/?retryWrites=true&w=majority&appName=agencvoyage 
+.pnp.* 
