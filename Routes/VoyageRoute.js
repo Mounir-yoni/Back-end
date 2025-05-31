@@ -1,31 +1,23 @@
 const express = require("express");
 const router = express.Router();
-const { getAllVoyage, getVoyage, createVoyage, updateVoyage, deleteVoyage } = require("../service/VoyageService");
-const { protect, restrictTo } = require("../middlewares/authMiddleware");
-const upload = require("../middlewares/uploadMiddleware");
+const { upload } = require("../config/cloudinary");
+const {
+  createVoyage,
+  getAllVoyage,
+  getVoyage,
+  updateVoyage,
+  deleteVoyage,
+} = require("../service/VoyageService");
+const { protect, restrictTo } = require("../service/AuthService");
 
 // Public routes
 router.get("/", getAllVoyage);
 router.get("/:id", getVoyage);
 
-// Protected routes (require authentication)
+// Protected routes
 router.use(protect);
-
-// Admin and agent routes
-router.use(restrictTo("admin", "superadmin", "manager"));
-
-router.post(
-  "/",
-  upload.single("image"),
-  createVoyage
-);
-
-router.patch(
-  "/:id",
-  upload.single("image"),
-  updateVoyage
-);
-
+router.post("/", upload.single("image"), createVoyage);
+router.put("/:id", upload.single("image"), updateVoyage);
 router.delete("/:id", deleteVoyage);
 
 module.exports = router;

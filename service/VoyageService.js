@@ -19,18 +19,11 @@ exports.getAllVoyage = asyncHandler(async (req, res, next) => {
   const { paginationResult, mongooseQuery } = apiFeatures;
   const voyages = await mongooseQuery;
 
-  // Transform the response to include full image URLs
-  const voyagesResponse = voyages.map(voyage => {
-    const voyageObj = voyage.toObject();
-    voyageObj.imageUrl = `${process.env.BASE_URL || 'http://localhost:8000'}${voyage.imagePath}`;
-    return voyageObj;
-  });
-
   res.status(200).json({
     success: true,
-    result: voyagesResponse.length,
+    result: voyages.length,
     paginationResult,
-    data: voyagesResponse
+    data: voyages
   });
 });
 
@@ -47,11 +40,7 @@ exports.getVoyage = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Voyage not found", 404));
   }
 
-  // Transform the response to include the full image URL
-  const voyageResponse = voyage.toObject();
-  voyageResponse.imageUrl = `${process.env.BASE_URL || 'http://localhost:8000'}${voyage.imagePath}`;
-
-  res.status(200).json({ success: true, data: voyageResponse });
+  res.status(200).json({ success: true, data: voyage });
 });
 
 // @desc create Voyage
@@ -88,16 +77,12 @@ exports.createVoyage = asyncHandler(async (req, res, next) => {
     ville,
     pays,
     remaining_places: nombre_de_personne,
-    image: req.file.filename,
-    imagePath: `/uploads/${req.file.filename}`,
+    image: req.file.path, // Cloudinary URL
+    imageId: req.file.filename, // Cloudinary public_id
     createdBy: req.user._id,
   });
 
-  // Transform the response to include the full image URL
-  const voyageResponse = voyage.toObject();
-  voyageResponse.imageUrl = `${process.env.BASE_URL || 'http://localhost:8000'}${voyage.imagePath}`;
-
-  res.status(201).json({ success: true, data: voyageResponse });
+  res.status(201).json({ success: true, data: voyage });
 });
 
 // @desc update Voyage
@@ -117,8 +102,8 @@ exports.updateVoyage = asyncHandler(async (req, res, next) => {
 
   // If new image is uploaded
   if (req.file) {
-    req.body.image = req.file.filename;
-    req.body.imagePath = `/uploads/${req.file.filename}`;
+    req.body.image = req.file.path; // Cloudinary URL
+    req.body.imageId = req.file.filename; // Cloudinary public_id
   }
 
   const updatedVoyage = await Voyage.findByIdAndUpdate(
@@ -130,11 +115,7 @@ exports.updateVoyage = asyncHandler(async (req, res, next) => {
     }
   );
 
-  // Transform the response to include the full image URL
-  const voyageResponse = updatedVoyage.toObject();
-  voyageResponse.imageUrl = `${process.env.BASE_URL || 'http://localhost:8000'}${updatedVoyage.imagePath}`;
-
-  res.status(200).json({ success: true, data: voyageResponse });
+  res.status(200).json({ success: true, data: updatedVoyage });
 });
 
 // @desc delete Voyage
