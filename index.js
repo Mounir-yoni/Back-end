@@ -122,7 +122,7 @@ app.use(hpp()); // Prevent parameter pollution
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: process.env.CORS_ORIGIN || 'https://agence-de-voyage-mounir-s-projects-b607d4b0.vercel.app',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -142,6 +142,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Body parser
 app.use(express.json({ limit: "10kb" })); // Limit body size
+
+
 
 // Mount routes
 app.use("/api/v1/voyages", VoyageRoute);
