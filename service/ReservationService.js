@@ -3,29 +3,105 @@ const Voyage = require("../models/Voyage");
 const APIFeatures = require("../utils/apiFeaturs");
 const asyncHandler = require("express-async-handler");
 const ApiError = require("../utils/apierror");
+const User = require("../models/User");
 
 // @desc    Get all reservations
 // @route   GET /api/v1/reservations
 // @access  Private (Admin, Manager)
 
-
-  
-
 exports.getAllReservations = asyncHandler(async (req, res, next) => {
   const countDocuments = await Reservation.countDocuments();
 
-  const apiFeatures = new APIFeatures(Reservation.find(), req.query)
-    .filter()
-    .sort()
-    .limitFields()
-    .pagination(countDocuments)
-    .search();
+  let reservations;
+  let paginationResult;
 
-  const { paginationResult, mongooseQuery } = apiFeatures;
-  const reservations = await mongooseQuery.populate({
-    path: "voyage user",
-    select: "title Firstname Lastname phone email date_de_depart",
-  });
+  // If keyword is provided, use aggregation pipeline to search in voyage fields
+  if (req.query.keyword) {
+    // Create aggregation pipeline
+    const pipeline = [
+      {
+        $lookup: {
+          from: 'voyages',
+          localField: 'voyage',
+          foreignField: '_id',
+          as: 'voyage'
+        }
+      },
+      {
+        $unwind: '$voyage'
+      },
+      {
+        $match: {
+          $or: [
+            { 'voyage.title': { $regex: req.query.keyword, $options: 'i' } },
+            { 'voyage.description': { $regex: req.query.keyword, $options: 'i' } }
+          ]
+        }
+      }
+    ];
+
+    // Add pagination to aggregation
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 15;
+    const skip = (page - 1) * limit;
+
+    // Add sort if provided
+    if (req.query.sort) {
+      const sortBy = req.query.sort.replace(',', ' ');
+      pipeline.push({ $sort: { [sortBy]: 1 } });
+    } else {
+      pipeline.push({ $sort: { createdAt: -1 } });
+    }
+
+    // Add pagination
+    pipeline.push({ $skip: skip });
+    pipeline.push({ $limit: limit });
+
+    // Execute aggregation
+    reservations = await Reservation.aggregate(pipeline);
+
+    // Manually populate user data
+    const userIds = reservations.map(r => r.user);
+    const users = await User.find({ _id: { $in: userIds } });
+    const userMap = users.reduce((map, user) => {
+      map[user._id.toString()] = user;
+      return map;
+    }, {});
+    
+    reservations = reservations.map(reservation => ({
+      ...reservation,
+      user: userMap[reservation.user.toString()]
+    }));
+
+    // Calculate pagination result
+    const totalDocs = await Reservation.aggregate([
+      ...pipeline.slice(0, -2), // Remove skip and limit
+      { $count: 'total' }
+    ]);
+
+    paginationResult = {
+      currentPage: page,
+      limit: limit,
+      numberOfPages: Math.ceil((totalDocs[0]?.total || 0) / limit),
+      next: page * limit < (totalDocs[0]?.total || 0) ? page + 1 : undefined,
+      prev: page > 1 ? page - 1 : undefined
+    };
+  } else {
+    // Use regular query with APIFeatures
+    const apiFeatures = new APIFeatures(Reservation.find(), req.query)
+      .filter()
+      .sort()
+      .limitFields()
+      .pagination(countDocuments);
+
+    const { paginationResult: result, mongooseQuery } = apiFeatures;
+    paginationResult = result;
+
+    reservations = await mongooseQuery.populate({
+      path: "voyage user",
+      select: "title Firstname Lastname phone email date_de_depart date_de_retour prix duree pays Adress ville codePostal destination",
+    });
+  }
 
   res.status(200).json({
     success: true,

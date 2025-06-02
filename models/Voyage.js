@@ -39,14 +39,14 @@ const voyageSchema = new mongoose.Schema({
     },
     image: {
         type: String,
-        required: [true, "Image is required"],
+        default: "default.jpg",
     },
     imageId: {
         type: String,
-        required: [true, "Image ID is required"],
+        default: "default.jpg",
     },
     ville: {
-        type: String,
+        type: [String],
         required: [true, "City is required"],
         trim: true,
     },

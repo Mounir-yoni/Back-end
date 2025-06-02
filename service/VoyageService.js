@@ -9,7 +9,7 @@ const ApiError = require("../utils/apierror");
 exports.getAllVoyage = asyncHandler(async (req, res, next) => {
   const countDocuments = await Voyage.countDocuments();
 
-  const apiFeatures = new APIFeatures(Voyage.find().populate("createdBy", "name email"), req.query)
+  const apiFeatures = new APIFeatures(Voyage.find({active: true}).populate("createdBy", "name email"), req.query)
     .filter()
     .sort()
     .limitFields()
@@ -18,6 +18,7 @@ exports.getAllVoyage = asyncHandler(async (req, res, next) => {
 
   const { paginationResult, mongooseQuery } = apiFeatures;
   const voyages = await mongooseQuery;
+
 
   res.status(200).json({
     success: true,
@@ -40,6 +41,8 @@ exports.getVoyage = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Voyage not found", 404));
   }
 
+  
+
   res.status(200).json({ success: true, data: voyage });
 });
 
@@ -47,6 +50,7 @@ exports.getVoyage = asyncHandler(async (req, res, next) => {
 // @route POST /api/v1/voyages
 // @access private
 exports.createVoyage = asyncHandler(async (req, res, next) => {
+  console.log("create voyage");
   const {
     title,
     description,
@@ -61,9 +65,7 @@ exports.createVoyage = asyncHandler(async (req, res, next) => {
   } = req.body;
 
   // Check if image was uploaded
-  if (!req.file) {
-    return next(new ApiError("Please upload a voyage image", 400));
-  }
+
 
   const voyage = await Voyage.create({
     title,
@@ -77,8 +79,8 @@ exports.createVoyage = asyncHandler(async (req, res, next) => {
     ville,
     pays,
     remaining_places: nombre_de_personne,
-    image: req.file.path, // Cloudinary URL
-    imageId: req.file.filename, // Cloudinary public_id
+    image: req.file ? req.file.path : "default.jpg", // Cloudinary URL
+    imageId: req.file ? req.file.filename : "default.jpg", // Cloudinary public_id
     createdBy: req.user._id,
   });
 
@@ -95,10 +97,6 @@ exports.updateVoyage = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Voyage not found", 404));
   }
 
-  // Check if user is the creator of the voyage
-  if (voyage.createdBy.toString() !== req.user._id.toString()) {
-    return next(new ApiError("You are not authorized to update this voyage", 403));
-  }
 
   // If new image is uploaded
   if (req.file) {
@@ -128,14 +126,12 @@ exports.deleteVoyage = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Voyage not found", 404));
   }
 
-  // Check if user is the creator of the voyage
-  if (voyage.createdBy.toString() !== req.user._id.toString()) {
-    return next(new ApiError("You are not authorized to delete this voyage", 403));
-  }
 
-  await voyage.deleteOne();
 
-  res.status(204).json({ success: true, data: null });
+
+  await voyage.updateOne({ active: false });
+
+  res.status(200).json({ success: true, message: "Voyage deleted successfully" });
 });
 
 // @desc deactivate Voyage

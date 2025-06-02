@@ -8,7 +8,7 @@ const {
   updateVoyage,
   deleteVoyage,
 } = require("../service/VoyageService");
-const { protect, restrictTo } = require("../service/AuthService");
+const { protect, allowedTo } = require("../service/AuthService");
 
 // Public routes
 router.get("/", getAllVoyage);
@@ -16,6 +16,7 @@ router.get("/:id", getVoyage);
 
 // Protected routes
 router.use(protect);
+router.use(allowedTo("admin", "superadmin","manager"));
 router.post("/", upload.single("image"), createVoyage);
 router.put("/:id", upload.single("image"), updateVoyage);
 router.delete("/:id", deleteVoyage);

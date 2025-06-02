@@ -14,8 +14,8 @@ exports.signup = asyncHandler(async (req, res, next) => {
   //1-create new user
   console.log(req.body);
   const newuser = await usermodel.create({
-    Firstname: req.body.Firstname,
-    Lastname: req.body.Lastname,
+    Firstname: req.body.firstname,
+    Lastname: req.body.lastname,
     email: req.body.email,
     phone: req.body.phone,
     password: req.body.password,
